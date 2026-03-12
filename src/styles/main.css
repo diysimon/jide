@@ -1,0 +1,215 @@
+/* Jide - 适老化设计CSS */
+
+/* 基础重置 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 大字体模式 */
+body.large-font {
+  font-size: 18px;
+}
+
+body.large-font h1 { font-size: 2.5rem; }
+body.large-font h2 { font-size: 2rem; }
+body.large-font h3 { font-size: 1.5rem; }
+
+/* 高对比度模式 */
+body.high-contrast {
+  background: #000;
+  color: #fff;
+}
+
+body.high-contrast .app,
+body.high-contrast .home,
+body.high-contrast .stats,
+body.high-contrast .profile,
+body.high-contrast .settings,
+body.high-contrast .training,
+body.high-contrast .game {
+  background: #000;
+}
+
+body.high-contrast .welcome-card,
+body.high-contrast .today-goal,
+body.high-contrast .quick-start,
+body.high-contrast .modules-section,
+body.high-contrast .module-section,
+body.high-contrast .stat-card,
+body.high-contrast .game-header,
+body.high-contrast .game-area,
+body.high-contrast .profile-form,
+body.high-contrast .settings-section,
+body.high-contrast .module-card,
+body.high-contrast .game-card {
+  background: #1a1a1a !important;
+  border-color: #fff !important;
+}
+
+body.high-contrast .game-card,
+body.high-contrast .module-card,
+body.high-contrast .stat-card {
+  background: #1a1a1a;
+}
+
+body.high-contrast h1,
+body.high-contrast h2,
+body.high-contrast h3,
+body.high-contrast h4,
+body.high-contrast .module-name,
+body.high-contrast .game-name,
+body.high-contrast .stat-value,
+body.high-contrast .setting-label {
+  color: #fff !important;
+}
+
+body.high-contrast p,
+body.high-contrast span,
+body.high-contrast .game-desc,
+body.high-contrast .setting-desc {
+  color: #ccc !important;
+}
+
+/* 链接样式 */
+a {
+  color: #1e3a5f;
+  text-decoration: none;
+}
+
+/* 按钮通用样式 */
+button {
+  font-family: inherit;
+}
+
+/* 输入框样式 */
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 选择颜色 */
+::selection {
+  background: #1e3a5f;
+  color: white;
+}
+
+/* 移动端优化 */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .app-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .welcome-card {
+    padding: 1rem;
+  }
+  
+  .welcome-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+}
+
+/* PWA相关 */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease;
+}
+
+/* 辅助类 */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+
+.p-1 { padding: 0.5rem; }
+.p-2 { padding: 1rem; }
+.p-3 { padding: 1.5rem; }
+
+/* 卡片阴影 */
+.shadow-sm {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.shadow-md {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+/* 圆角 */
+.rounded { border-radius: 0.5rem; }
+.rounded-lg { border-radius: 1rem; }
+.rounded-full { border-radius: 9999px; }
