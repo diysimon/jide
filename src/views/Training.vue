@@ -88,11 +88,11 @@ function startGame(module, gameId) {
 }
 
 .module-icon {
-  font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .module-name {
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #333;
 }
@@ -100,14 +100,14 @@ function startGame(module, gameId) {
 .games-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .game-card {
   background: #f8f9fa;
   border: none;
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
   cursor: pointer;
   text-align: left;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -125,23 +125,23 @@ function startGame(module, gameId) {
 .game-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .game-id {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: #888;
   font-weight: 600;
 }
 
 .game-name {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #333;
 }
 
 .game-desc {
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: #888;
 }
 
