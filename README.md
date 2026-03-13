@@ -1,7 +1,7 @@
-# Jide - 阿尔兹海默症大脑训练系统
+# 记得 - 阿尔兹海默症大脑训练系统
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license">
+  <img src="https://img.shields.io/badge/license-AGPL3-blue.svg" alt="license">
   <img src="https://img.shields.io/github/stars/diysimon/jide" alt="stars">
   <img src="https://img.shields.io/github/forks/diysimon/jide" alt="forks">
 </p>
@@ -92,7 +92,7 @@ jide/
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
+本项目采用 AGPL3 许可证 - 详见 [LICENSE](LICENSE) 文件。
 
 ## 🙏 致谢
 
