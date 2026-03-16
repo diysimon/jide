@@ -272,6 +272,104 @@
           </div>
         </div>
 
+        <!-- 词语接龙 V1 -->
+        <div v-else-if="id === 'V1'" class="word-chain">
+          <p class="word-chain-topic">话题：<span class="topic-word">{{ chainTopic }}</span></p>
+          <div class="chain-display">
+            <div v-for="(word, idx) in chainWords" :key="idx" class="chain-word">{{ word }}</div>
+          </div>
+          <p class="phase-tip">请接一个以「{{ lastChar}}」开头的词语</p>
+          <div class="chain-input">
+            <input v-model="chainInput" :placeholder="'以' + lastChar + '开头'" @keyup.enter="submitChain" />
+            <button @click="submitChain">确定</button>
+          </div>
+        </div>
+
+        <!-- 造句练习 V2 -->
+        <div v-else-if="id === 'V2'" class="sentence-game">
+          <p class="sentence-prompt">用下面的词语造句：</p>
+          <div class="sentence-words">
+            <span v-for="word in sentenceWords" :key="word" class="sentence-word">{{ word }}</span>
+          </div>
+          <textarea v-model="userSentence" placeholder="请输入完整的句子..." class="sentence-input"></textarea>
+          <button class="submit-btn" @click="checkSentence">确认</button>
+        </div>
+
+        <!-- 看图说话 V3 -->
+        <div v-else-if="id === 'V3'" class="describe-image">
+          <img :src="describeImg" alt="描述图片" class="desc-img" />
+          <p class="phase-tip">请描述这张图片的内容</p>
+          <textarea v-model="imageDesc" placeholder="请描述你看到的内容..." class="desc-input"></textarea>
+          <button class="submit-btn" @click="submitDesc">完成描述</button>
+        </div>
+
+        <!-- 双重任务 E1 -->
+        <div v-else-if="id === 'E1'" class="dual-task">
+          <div class="dual-info">
+            <div class="dual-panel">
+              <span class="dual-label">任务1：记住数字</span>
+              <span class="dual-num">{{ dualNum }}</span>
+            </div>
+            <div class="dual-panel">
+              <span class="dual-label">任务2：点击圆形</span>
+              <div class="dual-shapes">
+                <div v-for="shape in dualShapes" :key="shape.id" class="shape-item" :class="shape.type" @click="clickDualShape(shape.id)"></div>
+              </div>
+            </div>
+          </div>
+          <p class="phase-tip">回答刚才的数字：{{ dualAnswer }}</p>
+          <div class="dual-input">
+            <input v-model="dualInput" type="number" placeholder="输入数字" />
+            <button @click="checkDualTask">确认</button>
+          </div>
+        </div>
+
+        <!-- 停止-开始 E2 -->
+        <div v-else-if="id === 'E2'" class="stop-game">
+          <p class="stop-instruct" :class="{ warning: stopSignal === '停' }">
+            <span v-if="stopSignal === '开始'">🟢 说"开始"时点击</span>
+            <span v-else-if="stopSignal === '停'">🔴 说"停"时不要点击！</span>
+            <span v-else>🤔 等待指令...</span>
+          </p>
+          <div class="stop-area" @click="handleStopClick">
+            <span class="stop-icon">{{ stopSignal === '停' ? '✋' : '👆' }}</span>
+          </div>
+          <p class="phase-tip">得分：{{ stopScore }} | 错误：{{ stopErrors }}</p>
+        </div>
+
+        <!-- 计划安排 E3 -->
+        <div v-else-if="id === 'E3'" class="plan-game">
+          <p class="plan-tip">将任务按正确顺序排列：</p>
+          <div class="plan-tasks">
+            <div v-for="(task, idx) in planTasks" :key="idx" class="plan-task" :class="{ done: task.done }" @click="togglePlanTask(idx)">
+              <span class="task-num">{{ idx + 1 }}</span>
+              <span class="task-text">{{ task.text }}</span>
+            </div>
+          </div>
+          <button class="submit-btn" @click="checkPlanOrder">检查顺序</button>
+        </div>
+
+        <!-- 音乐感知 P1 -->
+        <div v-else-if="id === 'P1'" class="music-feel">
+          <div class="music-player">
+            <div class="music-icon" :class="{ playing: musicPlaying }">🎵</div>
+            <button class="play-btn" @click="toggleMusic">{{ musicPlaying ? '⏸️ 暂停' : '▶️ 播放' }}</button>
+          </div>
+          <p class="phase-tip">这段音乐表达什么情绪？</p>
+          <div class="emotion-options">
+            <button v-for="emo in emotions" :key="emo" class="emo-btn" :class="{ correct: answeredEmo === emo && correctEmo, wrong: answeredEmo === emo && !correctEmo }" :disabled="answeredEmo" @click="selectEmotion(emo)">{{ emo }}</button>
+          </div>
+        </div>
+
+        <!-- 颜色情绪 P2 -->
+        <div v-else-if="id === 'P2'" class="color-emotion">
+          <div class="color-show" :style="{ background: currentColor }"></div>
+          <p class="phase-tip">这个颜色让你联想到什么情绪？</p>
+          <div class="emotion-options">
+            <button v-for="emo in colorEmotions" :key="emo" class="emo-btn" :class="{ correct: answeredColor === emo && correctColor, wrong: answeredColor === emo && !correctColor }" :disabled="answeredColor" @click="selectColorEmotion(emo)">{{ emo }}</button>
+          </div>
+        </div>
+
         <!-- 默认：显示开发中 -->
         <div v-else class="coming-soon">
           <div class="coming-icon">🚧</div>
@@ -414,6 +512,50 @@ const currentCategory = ref('')
 const selectedBin = ref('')
 const categoryScore = ref(0)
 
+// 词语接龙 V1
+const chainWords = ref([])
+const chainInput = ref('')
+const chainTopic = ref('')
+const lastChar = ref('')
+
+// 造句练习 V2
+const sentenceWords = ref([])
+const userSentence = ref('')
+
+// 看图说话 V3
+const describeImg = ref('')
+const imageDesc = ref('')
+
+// 双重任务 E1
+const dualNum = ref(0)
+const dualAnswer = ref(0)
+const dualInput = ref('')
+const dualShapes = ref([])
+const clickCount = ref(0)
+
+// 停止-开始 E2
+const stopSignal = ref('等待')
+const stopScore = ref(0)
+const stopErrors = ref(0)
+const stopInterval = ref(null)
+const shouldClick = ref(true)
+
+// 计划安排 E3
+const planTasks = ref([])
+const planOrder = ref([])
+
+// 音乐感知 P1
+const musicPlaying = ref(false)
+const emotions = ref(['快乐', '悲伤', '平静', '紧张'])
+const answeredEmo = ref('')
+const correctEmo = ref(false)
+
+// 颜色情绪 P2
+const currentColor = ref('')
+const colorEmotions = ref(['温暖', '冷静', '活力', '忧郁'])
+const answeredColor = ref('')
+const correctColor = ref(false)
+
 const totalPairs = computed(() => cards.value.length / 2)
 const gridClass = computed(() => `grid-${Math.ceil(Math.sqrt(cards.value.length))}`)
 
@@ -505,6 +647,14 @@ function startGame() {
   else if (id === 'L2') initSudoku()
   else if (id === 'L3') initSequenceGame()
   else if (id === 'L4') initCategoryGame()
+  else if (id === 'V1') initWordChain()
+  else if (id === 'V2') initSentenceGame()
+  else if (id === 'V3') initDescribeImage()
+  else if (id === 'E1') initDualTask()
+  else if (id === 'E2') initStopGame()
+  else if (id === 'E3') initPlanGame()
+  else if (id === 'P1') initMusicFeel()
+  else if (id === 'P2') initColorEmotion()
 }
 
 function finishGame() {
@@ -1052,6 +1202,201 @@ function categorizeItem(item) {
   } else {
     item.result = 'wrong'
   }
+}
+
+// 词语接龙 V1
+function initWordChain() {
+  const topics = ['动物', '水果', '颜色', '国家', '城市']
+  chainTopic.value = topics[Math.floor(Math.random() * topics.length)]
+  const words = { '动物': ['狗', '猫', '兔子'], '水果': ['苹果', '香蕉', '橘子'], '颜色': ['红色', '蓝色', '绿色'], '国家': ['中国', '美国', '日本'], '城市': ['北京', '上海', '广州'] }
+  chainWords.value = words[chainTopic.value].slice(0, 2)
+  lastChar.value = chainWords.value[chainWords.value.length - 1].slice(-1)
+}
+
+function submitChain() {
+  if (!chainInput.value) return
+  if (chainInput.value[0] === lastChar.value) {
+    chainWords.value.push(chainInput.value)
+    if (chainWords.value.length >= 5) {
+      finishGame()
+    } else {
+      lastChar.value = chainInput.value.slice(-1)
+      chainInput.value = ''
+    }
+  } else {
+    alert('请接一个以「' + lastChar.value + '」开头的词语')
+    chainInput.value = ''
+  }
+}
+
+// 造句练习 V2
+function initSentenceGame() {
+  const sets = [
+    ['今天', '天气', '很好'],
+    ['我', '喜欢', '学习'],
+    ['妈妈', '做', '饭']
+  ]
+  sentenceWords.value = sets[Math.floor(Math.random() * sets.length)]
+  userSentence.value = ''
+}
+
+function checkSentence() {
+  const text = userSentence.value
+  const hasAll = sentenceWords.value.every(w => text.includes(w))
+  if (hasAll && text.length > 8) {
+    finishGame()
+  } else {
+    alert('请用所有词语造一个完整的句子')
+  }
+}
+
+// 看图说话 V3
+function initDescribeImage() {
+  const imgs = [
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400',
+    'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=400'
+  ]
+  describeImg.value = imgs[Math.floor(Math.random() * imgs.length)]
+  imageDesc.value = ''
+}
+
+function submitDesc() {
+  if (imageDesc.value.length >= 5) {
+    finishGame()
+  } else {
+    alert('请输入更详细的描述')
+  }
+}
+
+// 双重任务 E1
+function initDualTask() {
+  dualNum.value = Math.floor(Math.random() * 90) + 10
+  dualAnswer.value = dualNum.value
+  dualInput.value = ''
+  clickCount.value = 0
+  
+  const shapes = []
+  for (let i = 0; i < 8; i++) {
+    shapes.push({ id: i, type: i < 3 ? 'circle' : 'square' })
+  }
+  dualShapes.value = shapes.sort(() => Math.random() - 0.5)
+}
+
+function clickDualShape(id) {
+  const shape = dualShapes.value.find(s => s.id === id)
+  if (!shape) return
+  
+  clickCount.value++
+  if (clickCount.value >= 3) {
+    // 接下来问数字
+  }
+}
+
+function checkDualTask() {
+  if (parseInt(dualInput.value) === dualAnswer.value) {
+    finishGame()
+  } else {
+    alert('回答错误，再试一次')
+    initDualTask()
+  }
+}
+
+// 停止-开始 E2
+function initStopGame() {
+  stopSignal.value = '等待'
+  stopScore.value = 0
+  stopErrors.value = 0
+  shouldClick.value = true
+  
+  const signals = ['开始', '停', '开始', '停', '开始']
+  let idx = 0
+  
+  stopInterval.value = setInterval(() => {
+    if (gameState.value !== 'playing') {
+      clearInterval(stopInterval.value)
+      return
+    }
+    stopSignal.value = signals[idx % signals.length]
+    shouldClick.value = stopSignal.value === '开始'
+    idx++
+  }, 2000)
+}
+
+function handleStopClick() {
+  if (stopSignal.value === '等待') return
+  
+  if (shouldClick.value) {
+    stopScore.value++
+    if (stopScore.value >= 5) {
+      clearInterval(stopInterval.value)
+      finishGame()
+    }
+  } else {
+    stopErrors.value++
+    if (stopErrors.value >= 3) {
+      clearInterval(stopInterval.value)
+      finishGame()
+    }
+  }
+}
+
+// 计划安排 E3
+function initPlanGame() {
+  const tasks = [
+    { text: '起床', order: 1 },
+    { text: '刷牙', order: 2 },
+    { text: '吃早餐', order: 3 },
+    { text: '上班', order: 4 },
+    { text: '下班回家', order: 5 }
+  ]
+  planTasks.value = [...tasks].sort(() => Math.random() - 0.5).map(t => ({ ...t, done: false }))
+  planOrder.value = []
+}
+
+function togglePlanTask(idx) {
+  const task = planTasks.value[idx]
+  task.done = !task.done
+}
+
+function checkPlanOrder() {
+  const done = planTasks.value.filter(t => t.done)
+  const correct = done.length >= 3
+  if (correct) finishGame()
+  else alert('请完成至少3个任务')
+}
+
+// 音乐感知 P1
+function initMusicFeel() {
+  musicPlaying.value = false
+  answeredEmo.value = ''
+  const emos = ['快乐', '悲伤', '平静', '紧张']
+  correctEmo.value = emos[Math.floor(Math.random() * 2)] // 前两个更容易
+}
+
+function toggleMusic() {
+  musicPlaying.value = !musicPlaying.value
+}
+
+function selectEmotion(emo) {
+  answeredEmo.value = emo
+  correctEmo.value = emo === correctEmo.value
+  setTimeout(finishGame, 1000)
+}
+
+// 颜色情绪 P2
+function initColorEmotion() {
+  answeredColor.value = ''
+  const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7']
+  currentColor.value = colors[Math.floor(Math.random() * colors.length)]
+  const colorToEmo = { '#ff6b6b': '温暖', '#4ecdc4': '冷静', '#45b7d1': '平静', '#96ceb4': '活力', '#ffeaa7': '忧郁' }
+  correctColor.value = colorToEmo[currentColor.value]
+}
+
+function selectColorEmotion(emo) {
+  answeredColor.value = emo
+  correctColor.value = emo === correctColor.value
+  setTimeout(finishGame, 1000)
 }
 
 onUnmounted(() => {
@@ -1960,6 +2305,327 @@ onUnmounted(() => {
   border-radius: 0.75rem;
   cursor: pointer;
   font-size: 1.1rem;
+}
+
+/* 词语接龙 */
+.word-chain-topic {
+  text-align: center;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.topic-word {
+  font-weight: bold;
+  color: #1e3a5f;
+  font-size: 1.5rem;
+}
+
+.chain-display {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.chain-word {
+  padding: 0.5rem 1rem;
+  background: #1e3a5f;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.chain-input {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.chain-input input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.chain-input button {
+  padding: 0.75rem 1.5rem;
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+/* 造句 */
+.sentence-prompt {
+  text-align: center;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.sentence-words {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sentence-word {
+  padding: 0.75rem 1rem;
+  background: #fff3cd;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.sentence-input {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 1rem;
+  display: block;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  min-height: 80px;
+}
+
+/* 看图说话 */
+.desc-img {
+  width: 100%;
+  max-width: 350px;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.desc-input {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 1rem;
+  display: block;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  min-height: 80px;
+}
+
+/* 双重任务 */
+.dual-info {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dual-panel {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.dual-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.dual-num {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1e3a5f;
+}
+
+.dual-shapes {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shape-item {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.shape-item.circle {
+  border-radius: 50%;
+  background: #ff6b6b;
+}
+
+.shape-item.square {
+  background: #4ecdc4;
+}
+
+.dual-input {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.dual-input input {
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  width: 100px;
+  font-size: 1.1rem;
+}
+
+.dual-input button {
+  padding: 0.75rem 1.5rem;
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+/* 停止-开始 */
+.stop-instruct {
+  text-align: center;
+  font-size: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stop-instruct.warning {
+  background: #fee;
+  color: #c00;
+}
+
+.stop-area {
+  width: 150px;
+  height: 150px;
+  background: white;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.stop-icon {
+  font-size: 4rem;
+}
+
+/* 计划安排 */
+.plan-tip {
+  text-align: center;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.plan-tasks {
+  max-width: 350px;
+  margin: 0 auto 1rem;
+}
+
+.plan-task {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.plan-task.done {
+  background: #4CAF50;
+}
+
+.plan-task.done .task-text {
+  color: white;
+}
+
+.task-num {
+  width: 30px;
+  height: 30px;
+  background: #1e3a5f;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-text {
+  font-size: 1.1rem;
+}
+
+/* 音乐感知 */
+.music-player {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.music-icon {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.music-icon.playing {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.play-btn {
+  padding: 0.75rem 1.5rem;
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.emotion-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.emo-btn {
+  padding: 1rem 1.5rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 0.75rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.emo-btn.correct {
+  background: #4CAF50;
+  color: white;
+}
+
+.emo-btn.wrong {
+  background: #f44336;
+  color: white;
+}
+
+/* 颜色情绪 */
+.color-show {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 /* 通用 */
