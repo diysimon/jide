@@ -207,6 +207,71 @@
           <p class="phase-tip">已找到：{{ foundCount }} / {{ totalTargets }}</p>
         </div>
 
+        <!-- 追踪目标 A4 -->
+        <div v-else-if="id === 'A4'" class="track-target">
+          <p class="track-instruct">追踪<span class="track-color" :style="{ background: trackColor }"></span>颜色的球</p>
+          <div class="track-arena" ref="trackArena">
+            <div v-for="ball in balls" :key="ball.id" class="track-ball" :style="{ left: ball.x + '%', top: ball.y + '%', background: ball.color, transform: 'scale(' + (ball.tracked ? 1.3 : 1) + ')' }" @click="clickBall(ball.id)">
+              <span v-if="ball.tracked" class="track-mark">✓</span>
+            </div>
+          </div>
+          <p class="phase-tip">已追踪：{{ trackedCount }} / {{ totalBalls }}</p>
+        </div>
+
+        <!-- 图形推理 L1 -->
+        <div v-else-if="id === 'L1'" class="pattern-reason">
+          <div class="pattern-display">
+            <div v-for="(row, ridx) in patternRows" :key="ridx" class="pattern-row">
+              <div v-for="(cell, cidx) in row" :key="cidx" class="pattern-cell" :style="{ background: cell }"></div>
+            </div>
+            <div class="pattern-arrow">→</div>
+            <div class="pattern-row">
+              <div v-for="(opt, oidx) in patternOptions" :key="oidx" class="pattern-cell option" @click="selectPattern(oidx)">{{ opt }}</div>
+            </div>
+          </div>
+          <p class="phase-tip">找出规律，选择下一个图形</p>
+        </div>
+
+        <!-- 数独入门 L2 -->
+        <div v-else-if="id === 'L2'" class="sudoku-game">
+          <div class="sudoku-grid">
+            <div v-for="(row, ridx) in sudokuBoard" :key="ridx" class="sudoku-row">
+              <div v-for="(cell, cidx) in row" :key="cidx" class="sudoku-cell" :class="{ fixed: cell.fixed, selected: selectedCell?.r === ridx && selectedCell?.c === cidx }" @click="selectSudokuCell(ridx, cidx)">
+                <span v-if="cell.value">{{ cell.value }}</span>
+                <span v-else class="sudoku-empty" @click.stop="inputSudoku(num)" v-for="num in 4" :key="num">{{ num }}</span>
+              </div>
+            </div>
+          </div>
+          <p class="phase-tip">在4x4网格中填入1-4，每行每列不重复</p>
+        </div>
+
+        <!-- 序列找规律 L3 -->
+        <div v-else-if="id === 'L3'" class="sequence-game">
+          <div class="sequence-display">
+            <span v-for="(num, idx) in sequenceNum" :key="idx" class="seq-num">{{ num }}</span>
+            <span class="seq-q mark">?</span>
+          </div>
+          <div class="sequence-options">
+            <button v-for="opt in sequenceOptions" :key="opt" class="seq-btn" @click="selectSequence(opt)">{{ opt }}</button>
+          </div>
+        </div>
+
+        <!-- 分类游戏 L4 -->
+        <div v-else-if="id === 'L4'" class="category-game">
+          <p class="category-tip">将物品放入正确类别：<span class="cat-name">{{ currentCategory }}</span></p>
+          <div class="category-items">
+            <div v-for="item in categoryItems" :key="item.name" class="cat-item" :class="{ correct: item.result === 'correct', wrong: item.result === 'wrong' }" @click="categorizeItem(item)">
+              <span class="cat-emoji">{{ item.emoji }}</span>
+              <span class="cat-label">{{ item.name }}</span>
+            </div>
+          </div>
+          <div class="category-bins">
+            <div class="cat-bin" @click="selectBin('水果')">水果</div>
+            <div class="cat-bin" @click="selectBin('动物')">动物</div>
+            <div class="cat-bin" @click="selectBin('颜色')">颜色</div>
+          </div>
+        </div>
+
         <!-- 默认：显示开发中 -->
         <div v-else class="coming-soon">
           <div class="coming-icon">🚧</div>
@@ -322,6 +387,33 @@ const searchCells = ref([])
 const foundCount = ref(0)
 const totalTargets = ref(5)
 
+// 追踪目标 A4
+const balls = ref([])
+const trackedCount = ref(0)
+const totalBalls = ref(3)
+const trackColor = ref('#ff6b6b')
+const trackArena = ref(null)
+
+// 图形推理 L1
+const patternRows = ref([])
+const patternOptions = ref([])
+const selectedPattern = ref(null)
+
+// 数独入门 L2
+const sudokuBoard = ref([])
+const selectedCell = ref(null)
+
+// 序列找规律 L3
+const sequenceNum = ref([])
+const sequenceOptions = ref([])
+const correctAnswer = ref(0)
+
+// 分类游戏 L4
+const categoryItems = ref([])
+const currentCategory = ref('')
+const selectedBin = ref('')
+const categoryScore = ref(0)
+
 const totalPairs = computed(() => cards.value.length / 2)
 const gridClass = computed(() => `grid-${Math.ceil(Math.sqrt(cards.value.length))}`)
 
@@ -408,6 +500,11 @@ function startGame() {
   else if (id === 'M6') initLocationMemory()
   else if (id === 'M7') initEventSort()
   else if (id === 'A3') initVisualSearch()
+  else if (id === 'A4') initTrackTarget()
+  else if (id === 'L1') initPatternReason()
+  else if (id === 'L2') initSudoku()
+  else if (id === 'L3') initSequenceGame()
+  else if (id === 'L4') initCategoryGame()
 }
 
 function finishGame() {
@@ -779,6 +876,181 @@ function clickSearchCell(idx) {
     cell.found = true
     foundCount.value++
     if (foundCount.value >= totalTargets.value) finishGame()
+  }
+}
+
+// 追踪目标 A4
+function initTrackTarget() {
+  trackedCount.value = 0
+  const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7']
+  trackColor.value = colors[Math.floor(Math.random() * colors.length)]
+  totalBalls.value = 3 + Math.floor(Math.random() * 3)
+  
+  const ballList = []
+  for (let i = 0; i < 5; i++) {
+    ballList.push({
+      id: i,
+      x: 10 + Math.random() * 70,
+      y: 10 + Math.random() * 70,
+      color: colors[i],
+      tracked: false,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2
+    })
+  }
+  balls.value = ballList
+  
+  // 动画循环
+  const moveInterval = setInterval(() => {
+    if (gameState.value !== 'playing') {
+      clearInterval(moveInterval)
+      return
+    }
+    balls.value.forEach(ball => {
+      ball.x += ball.vx
+      ball.y += ball.vy
+      if (ball.x < 5 || ball.x > 90) ball.vx *= -1
+      if (ball.y < 5 || ball.y > 90) ball.vy *= -1
+    })
+  }, 50)
+  
+  window.trackInterval = moveInterval
+}
+
+function clickBall(id) {
+  const ball = balls.value.find(b => b.id === id)
+  if (!ball || ball.tracked) return
+  
+  if (ball.color === trackColor.value) {
+    ball.tracked = true
+    trackedCount.value++
+    if (trackedCount.value >= totalBalls.value) {
+      clearInterval(window.trackInterval)
+      finishGame()
+    }
+  }
+}
+
+// 图形推理 L1
+function initPatternReason() {
+  const shapes = ['■', '●', '▲', '◆', '★']
+  const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1']
+  
+  // 生成简单的规律：每行增加一个形状
+  const row1 = [shapes[0], shapes[1], shapes[2]]
+  const row2 = [shapes[1], shapes[2], shapes[3]]
+  const row3 = [shapes[2], shapes[3], shapes[4]]
+  
+  patternRows.value = [row1, row2, row3]
+  patternOptions.value = [shapes[4], shapes[3], shapes[2]]
+}
+
+function selectPattern(idx) {
+  if (patternOptions.value[idx] === '★') {
+    finishGame()
+  } else {
+    initPatternReason()
+  }
+}
+
+// 数独入门 L2
+function initSudoku() {
+  selectedCell.value = null
+  const solution = [[1,2,3,4], [3,4,1,2], [2,1,4,3], [4,3,2,1]]
+  
+  // 挖空一些格子
+  const board = []
+  for (let r = 0; r < 4; r++) {
+    const row = []
+    for (let c = 0; c < 4; c++) {
+      const fixed = Math.random() > 0.4
+      row.push({ value: fixed ? solution[r][c] : null, fixed })
+    }
+    board.push(row)
+  }
+  sudokuBoard.value = board
+}
+
+function selectSudokuCell(r, c) {
+  if (sudokuBoard.value[r][c].fixed) return
+  selectedCell.value = { r, c }
+}
+
+function inputSudoku(num) {
+  if (!selectedCell.value) return
+  const { r, c } = selectedCell.value
+  sudokuBoard.value[r][c].value = num
+  
+  // 检查是否完成
+  let complete = true
+  for (let row of sudokuBoard.value) {
+    for (let cell of row) {
+      if (!cell.value) { complete = false; break }
+    }
+  }
+  if (complete) {
+    // 简单检查每行每列是否不重复
+    const values = sudokuBoard.value.flat().map(c => c.value)
+    const unique = new Set(values)
+    if (unique.size === 16) finishGame()
+  }
+}
+
+// 序列找规律 L3
+function initSequenceGame() {
+  // 等差数列
+  const start = Math.floor(Math.random() * 5) + 1
+  const diff = Math.floor(Math.random() * 3) + 1
+  sequenceNum.value = [start, start + diff, start + diff * 2, start + diff * 3]
+  correctAnswer.value = start + diff * 4
+  
+  const opts = [correctAnswer.value, correctAnswer.value + 1, correctAnswer.value - 1]
+  sequenceOptions.value = opts.sort(() => Math.random() - 0.5)
+}
+
+function selectSequence(num) {
+  if (num === correctAnswer.value) {
+    finishGame()
+  } else {
+    initSequenceGame()
+  }
+}
+
+// 分类游戏 L4
+function initCategoryGame() {
+  categoryScore.value = 0
+  
+  const items = [
+    { name: '苹果', emoji: '🍎', category: '水果' },
+    { name: '香蕉', emoji: '🍌', category: '水果' },
+    { name: '狗', emoji: '🐕', category: '动物' },
+    { name: '猫', emoji: '🐱', category: '动物' },
+    { name: '红色', emoji: '🔴', category: '颜色' },
+    { name: '蓝色', emoji: '🔵', category: '颜色' },
+    { name: '葡萄', emoji: '🍇', category: '水果' },
+    { name: '鸟', emoji: '🐦', category: '动物' }
+  ]
+  
+  categoryItems.value = items.sort(() => Math.random() - 0.5).slice(0, 6).map(i => ({ ...i, result: null }))
+  
+  const cats = ['水果', '动物', '颜色']
+  currentCategory.value = cats[Math.floor(Math.random() * cats.length)]
+  selectedBin.value = ''
+}
+
+function selectBin(cat) {
+  selectedBin.value = cat
+}
+
+function categorizeItem(item) {
+  if (!selectedBin.value || item.result) return
+  
+  if (item.category === selectedBin.value) {
+    item.result = 'correct'
+    categoryScore.value++
+    if (categoryScore.value >= 3) finishGame()
+  } else {
+    item.result = 'wrong'
   }
 }
 
@@ -1448,6 +1720,246 @@ onUnmounted(() => {
 .search-cell.found {
   background: #4CAF50;
   color: white;
+}
+
+/* 追踪目标 */
+.track-instruct {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.track-color {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.track-arena {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  background: white;
+  border-radius: 1rem;
+  margin: 0 auto;
+}
+
+.track-ball {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+  transition: transform 0.2s;
+}
+
+.track-mark {
+  font-weight: bold;
+}
+
+/* 图形推理 */
+.pattern-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem;
+}
+
+.pattern-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pattern-cell {
+  width: 50px;
+  height: 50px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+}
+
+.pattern-cell.option {
+  background: white;
+  border: 2px solid #ddd;
+  cursor: pointer;
+}
+
+.pattern-cell.option:hover {
+  border-color: #1e3a5f;
+}
+
+.pattern-arrow {
+  font-size: 2rem;
+  color: #1e3a5f;
+}
+
+/* 数独 */
+.sudoku-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.sudoku-row {
+  display: flex;
+  gap: 4px;
+}
+
+.sudoku-cell {
+  width: 60px;
+  height: 60px;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.sudoku-cell.fixed {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.sudoku-cell.selected {
+  border-color: #1e3a5f;
+  border-width: 3px;
+}
+
+.sudoku-empty {
+  font-size: 0.75rem;
+  color: #ccc;
+  cursor: pointer;
+  padding: 2px;
+}
+
+/* 序列找规律 */
+.sequence-display {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.seq-num {
+  width: 50px;
+  height: 50px;
+  background: white;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.seq-q {
+  background: #fff3cd;
+}
+
+.sequence-options {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.seq-btn {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.seq-btn:hover {
+  border-color: #1e3a5f;
+}
+
+/* 分类游戏 */
+.category-tip {
+  text-align: center;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.cat-name {
+  font-weight: bold;
+  color: #1e3a5f;
+  font-size: 1.5rem;
+}
+
+.category-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  max-width: 320px;
+  margin: 0 auto 1rem;
+}
+
+.cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  min-width: 70px;
+}
+
+.cat-item.correct {
+  background: #4CAF50;
+}
+
+.cat-item.wrong {
+  background: #f44336;
+}
+
+.cat-emoji {
+  font-size: 2rem;
+}
+
+.cat-label {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.cat-item.correct .cat-label,
+.cat-item.wrong .cat-label {
+  color: white;
+}
+
+.category-bins {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.cat-bin {
+  padding: 1rem 1.5rem;
+  background: #1e3a5f;
+  color: white;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 1.1rem;
 }
 
 /* 通用 */
