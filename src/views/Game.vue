@@ -880,48 +880,36 @@ function initFaceName() {
   answered.value = false
   userChoice.value = ''
   
-  // 东亚名人照片（使用真实公众人物图片）
-  const eastAsianCelebs = [
-    // 中国商业领袖
-    { name: '马云', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Jack_Ma_2015.jpg/150px-Jack_Ma_2015.jpg' },
-    { name: '马化腾', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Ma_Huateng_2019.jpg/150px-Ma_Huateng_2019.jpg' },
-    { name: '李彦宏', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Robin_Li_2019.jpg/150px-Robin_Li_2019.jpg' },
-    { name: '雷军', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Lei_Jun_2021.jpg/150px-Lei_Jun_2021.jpg' },
-    { name: '董明珠', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Dong_Mingzhu_2022.jpg/150px-Dong_Mingzhu_2022.jpg' },
-    { name: '刘强东', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Liu_Qiangdong_2015.jpg/150px-Liu_Qiangdong_2015.jpg' },
-    { name: '王健林', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Wang_Jianlin_2017.jpg/150px-Wang_Jianlin_2017.jpg' },
-    { name: '许家印', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Xu_Jiayin_2022.jpg/150px-Xu_Jiayin_2022.jpg' },
-    // 中国明星
-    { name: '周杰伦', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Jay_Chou_2014.jpg/150px-Jay_Chou_2014.jpg' },
-    { name: '成龙', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Jackie_Chan_2016.jpg/150px-Jackie_Chan_2016.jpg' },
-    { name: '李连杰', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Jet_Li_2014.jpg/150px-Jet_Li_2014.jpg' },
-    { name: '甄子丹', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Donnie_Yen_2013.jpg/150px-Donnie_Yen_2013.jpg' },
-    { name: '刘德华', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Andy_Lau_2019.jpg/150px-Andy_Lau_2019.jpg' },
-    { name: '梁朝伟', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Tony_Leung_2018.jpg/150px-Tony_Leung_2018.jpg' },
-    { name: '周星驰', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Stephen_Chow_2019.jpg/150px-Stephen_Chow_2019.jpg' },
-    { name: '黄晓明', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Huang_Xiaoming_2019.jpg/150px-Huang_Xiaoming_2019.jpg' },
-    { name: '胡歌', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Hu_Ge_2019.jpg/150px-Hu_Ge_2019.jpg' },
-    { name: '彭于晏', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Peng_Yuyan_2019.jpg/150px-Peng_Yuyan_2019.jpg' },
-    // 韩国明星
-    { name: '李敏镐', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Lee_Min_Ho_2019.jpg/150px-Lee_Min_Ho_2019.jpg' },
-    { name: '权志龙', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/G-Dragon_2017.jpg/150px-G-Dragon_2017.jpg' },
-    { name: '宋仲基', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Song_Joong-ki_2019.jpg/150px-Song_Joong-ki_2019.jpg' },
-    { name: '宋慧乔', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Song_Hye-kyo_2019.jpg/150px-Song_Hye-kyo_2019.jpg' },
-    { name: '金秀贤', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Kim_Soo-hyun_2019.jpg/150px-Kim_Soo-hyun_2019.jpg' },
-    { name: '全智贤', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Jeon_Ji-hyun_2019.jpg/150px-Jeon_Ji-hyun_2019.jpg' },
-    { name: '裴秀智', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Bae_Suzy_2019.jpg/150px-Bae_Suzy_2019.jpg' },
-    { name: '朴叙俊', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Park_Seo-joon_2019.jpg/150px-Park_Seo-joon_2019.jpg' },
-    // 日本明星
-    { name: '苍井空', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Aoi_Aoki_2012.jpg/150px-Aoi_Aoki_2012.jpg' },
-    { name: '福山雅治', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Masaharu_Fukuyama_2018.jpg/150px-Masaharu_Fukuyama_2018.jpg' },
-    { name: '石原里美', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Satomi_Ishihara_2019.jpg/150px-Satomi_Ishihara_2019.jpg' },
-    { name: '新垣结衣', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Yui_Aragaki_2018.jpg/150px-Yui_Aragaki_2018.jpg' },
-    { name: '山下智久', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Tomohisa_Yamashita_2019.jpg/150px-Tomohisa_Yamashita_2019.jpg' },
-    { name: '桥本环奈', face: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Kanna_Hashimoto_2019.jpg/150px-Kanna_Hashimoto_2019.jpg' }
+  // 东亚人脸照片（使用randomuser.me可靠源）
+  const eastAsianFaces = [
+    { name: '张伟', face: 'https://randomuser.me/api/portraits/men/1.jpg' },
+    { name: '李娜', face: 'https://randomuser.me/api/portraits/women/2.jpg' },
+    { name: '王强', face: 'https://randomuser.me/api/portraits/men/3.jpg' },
+    { name: '刘洋', face: 'https://randomuser.me/api/portraits/men/4.jpg' },
+    { name: '陈静', face: 'https://randomuser.me/api/portraits/women/5.jpg' },
+    { name: '杨明', face: 'https://randomuser.me/api/portraits/men/6.jpg' },
+    { name: '赵磊', face: 'https://randomuser.me/api/portraits/men/7.jpg' },
+    { name: '孙丽', face: 'https://randomuser.me/api/portraits/women/8.jpg' },
+    { name: '周杰', face: 'https://randomuser.me/api/portraits/men/9.jpg' },
+    { name: '吴芳', face: 'https://randomuser.me/api/portraits/women/10.jpg' },
+    { name: '郑浩', face: 'https://randomuser.me/api/portraits/men/11.jpg' },
+    { name: '林梅', face: 'https://randomuser.me/api/portraits/women/12.jpg' },
+    { name: '黄涛', face: 'https://randomuser.me/api/portraits/men/13.jpg' },
+    { name: '林霞', face: 'https://randomuser.me/api/portraits/women/14.jpg' },
+    { name: '徐鹏', face: 'https://randomuser.me/api/portraits/men/15.jpg' },
+    { name: '孙丽', face: 'https://randomuser.me/api/portraits/women/16.jpg' },
+    { name: '马超', face: 'https://randomuser.me/api/portraits/men/17.jpg' },
+    { name: '朱琳', face: 'https://randomuser.me/api/portraits/women/18.jpg' },
+    { name: '胡军', face: 'https://randomuser.me/api/portraits/men/19.jpg' },
+    { name: '郭敏', face: 'https://randomuser.me/api/portraits/women/20.jpg' },
+    { name: '何刚', face: 'https://randomuser.me/api/portraits/men/21.jpg' },
+    { name: '罗娜', face: 'https://randomuser.me/api/portraits/women/22.jpg' },
+    { name: '高峰', face: 'https://randomuser.me/api/portraits/men/23.jpg' },
+    { name: '宋娟', face: 'https://randomuser.me/api/portraits/women/24.jpg' }
   ]
   
   // 随机打乱并选择4个人
-  const shuffled = [...eastAsianCelebs].sort(() => Math.random() - 0.5)
+  const shuffled = [...eastAsianFaces].sort(() => Math.random() - 0.5)
   faceNamePairs.value = shuffled.slice(0, 4)
   
   setTimeout(() => {
