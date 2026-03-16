@@ -38,6 +38,35 @@
 
       <!-- 游戏进行中 -->
       <div v-else-if="gameState === 'playing'" class="playing-area">
+        
+        <!-- 提示按钮 -->
+        <button class="hint-btn" @click="showHint">
+          💡 {{ hintVisible ? '关闭提示' : '查看提示' }}
+        </button>
+        
+        <!-- 提示弹窗 -->
+        <div v-if="hintVisible" class="hint-panel">
+          <div class="hint-content">
+            <h4>📋 游戏提示</h4>
+            <p>{{ gameHint }}</p>
+            <button class="hint-close" @click="hintVisible = false">知道了</button>
+          </div>
+        </div>
+
+        <!-- 教程引导 -->
+        <div v-if="showTutorial" class="tutorial-overlay">
+          <div class="tutorial-card">
+            <div class="tutorial-step">步骤 {{ tutorialStep + 1 }} / {{ tutorialTips.length }}</div>
+            <p class="tutorial-text">{{ tutorialTips[tutorialStep] }}</p>
+            <div class="tutorial-actions">
+              <button v-if="tutorialStep > 0" class="tutorial-btn" @click="tutorialStep--">上一步</button>
+              <button class="tutorial-btn primary" @click="nextTutorialStep">
+                {{ tutorialStep < tutorialTips.length - 1 ? '下一步' : '开始游戏' }}
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <!-- 翻卡配对 M1 -->
         <div v-if="id === 'M1'" class="memory-cards">
           <div class="cards-grid" :class="gridClass">
@@ -69,16 +98,22 @@
         <div v-else-if="id === 'M3'" class="image-sequence">
           <div v-if="phase === 'show'" class="show-phase">
             <div class="image-grid">
-              <div v-for="(img, idx) in showImages" :key="idx" class="seq-image">{{ img.num }}</div>
+              <div v-for="(img, idx) in showImages" :key="idx" class="seq-image">
+                <img :src="img.img" :alt="img.name" class="seq-img" />
+                <span class="seq-num-badge">{{ img.num }}</span>
+              </div>
             </div>
-            <p class="phase-tip">记住图片顺序 (点击数字)</p>
+            <p class="phase-tip">🖼️ 记住这9张图片的顺序</p>
           </div>
           <div v-else-if="phase === 'input'" class="input-phase">
-            <p class="phase-tip">按顺序点击图片</p>
+            <p class="phase-tip">👆 按1-9顺序点击图片</p>
             <div class="image-grid">
-              <div v-for="(img, idx) in inputImages" :key="idx" class="seq-image" :class="{ selected: img.clicked }" @click="clickImage(idx)">{{ img.num }}</div>
+              <div v-for="(img, idx) in inputImages" :key="idx" class="seq-image" :class="{ selected: img.clicked }" @click="clickImage(idx)">
+                <img :src="img.img" :alt="img.name" class="seq-img" />
+                <span v-if="img.clicked" class="seq-num-badge">{{ img.num }}</span>
+              </div>
             </div>
-            <p class="sequence-display">{{ currentSequence.join(' → ') }}</p>
+            <p class="sequence-display">当前顺序：{{ currentSequence.join(' → ') || '还未点击' }}</p>
           </div>
         </div>
 
@@ -427,6 +462,16 @@ const gameIcon = computed(() => {
 const gameState = ref('ready')
 const showInstructions = ref(false)
 const showScore = ref(true)
+
+// 教程系统
+const showTutorial = ref(false)
+const tutorialStep = ref(0)
+const tutorialTips = ref([])
+
+// 游戏提示
+const gameHint = ref('')
+const hintVisible = ref(false)
+
 const score = ref(0)
 const time = ref(0)
 const timer = ref(null)
@@ -619,6 +664,73 @@ function goBack() {
   router.push('/training')
 }
 
+// 显示游戏提示
+function showHint() {
+  if (hintVisible.value) {
+    hintVisible.value = false
+    return
+  }
+  
+  // 根据游戏ID提供详细提示
+  const hints = {
+    'M1': '仔细观察每张卡片，找到相同的图案配对。点击卡片翻转，两张相同的卡片会消除。',
+    'M2': '记住屏幕上显示的数字顺序，从左到右依次输入。数字会逐渐增加难度。',
+    'M3': '记住图片显示的顺序，点击图片按正确顺序排列。',
+    'M4': '记住每张人脸对应的姓名，然后选择正确的姓名匹配。',
+    'M5': '记住词语组合，然后在空缺处填入正确的词语。',
+    'M6': '记住数字的位置顺序，然后按1-9的顺序依次点击。',
+    'M7': '记住事件的先后顺序，将事件按正确时间线排列。',
+    'M8': '记住颜色和形状的配对关系，然后选择正确的组合。',
+    'A1': '按顺序1-25点击数字，从左上角开始，逐渐找到下一个。',
+    'A2': '仔细对比两张图片，找出所有不同的地方并点击。',
+    'A3': '仔细寻找目标字符，它隐藏在众多干扰字符中。',
+    'A4': '追踪目标颜色的球，点击正确颜色的球。',
+    'L1': '观察图形的规律，找出下一个应该是什么图形。',
+    'L2': '在4x4的格子中填入1-4，确保每行每列都不重复。',
+    'L3': '找出数字的规律，推测下一个数字应该是什么。',
+    'L4': '将物品拖拽到正确的类别中，注意分类标准。',
+    'V1': '接龙的词语要和上一个词语的最后一个字相同。',
+    'V2': '使用所有给出的词语组成一个完整通顺的句子。',
+    'V3': '仔细观察图片，描述你看到的所有细节。',
+    'E1': '同时完成两个任务，注意不要遗漏任何一个。',
+    'E2': '当说"开始"时点击，说"停"时不要点击。',
+    'E3': '按正确的顺序完成各项任务。',
+    'P1': '仔细聆听音乐，感受它表达的情绪是快乐、悲伤、平静还是紧张。',
+    'P2': '不同的颜色会给人不同的感觉，选择最符合的情绪。'
+  }
+  
+  gameHint.value = hints[id] || '仔细观察，沉着应对，祝您取得好成绩！'
+  hintVisible.value = true
+}
+
+// 教程相关
+function nextTutorialStep() {
+  if (tutorialStep.value < tutorialTips.length - 1) {
+    tutorialStep.value++
+  } else {
+    showTutorial.value = false
+    startGame()
+  }
+}
+
+function startTutorial() {
+  // 根据游戏类型设置教程步骤
+  const tutorials = {
+    'M1': ['点击任意卡片将其翻开', '找到另一张相同图案的卡片', '两张相同的卡片会消除', '消除所有卡片即获胜'],
+    'M2': ['仔细记住显示的数字', '数字会停留几秒钟', '在空白处按顺序输入数字', '全部正确即得分'],
+    'M3': ['记住图片显示的顺序', '图片会按顺序依次闪烁', '按刚才的顺序点击图片', '全部正确即通过'],
+    'A1': ['表格中有1-25个数字', '按顺序从1点击到25', '越快完成得分越高', '不要跳过的数字'],
+    'A2': '仔细对比两张图片，找出5处不同的地方',
+    'A3': '找到所有带圆圈的目标字符',
+    'L1': '观察图形规律，从选项中选择正确的答案',
+    'L2': '在空格中填入数字，每行每列不能重复'
+  }
+  
+  tutorialTips.value = tutorials[id] || ['仔细观察题目', '理解规则', '开始作答']
+  tutorialStep.value = 0
+  showTutorial.value = true
+}
+
 function startGame() {
   gameState.value = 'playing'
   time.value = 0
@@ -767,17 +879,28 @@ function submitNumber() {
 function initImageSequence() {
   phase.value = 'show'
   currentSequence.value = []
-  let nums = [1,2,3,4,5,6,7,8,9]
-  for (let i = nums.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [nums[i], nums[j]] = [nums[j], nums[i]]
-  }
-  showImages.value = nums.map(n => ({ num: n, pos: n-1 }))
-  inputImages.value = [...showImages.value].map(n => ({ num: n.num, clicked: false }))
+  
+  // 使用真实图片，每张图片代表一个序号
+  const imageThemes = [
+    { num: 1, img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200', name: '山峰' },
+    { num: 2, img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=200', name: '森林' },
+    { num: 3, img: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=200', name: '树木' },
+    { num: 4, img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200', name: '大海' },
+    { num: 5, img: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=200', name: '湖泊' },
+    { num: 6, img: 'https://images.unsplash.com/photo-1505144808419-1957a94ca61e?w=200', name: '日出' },
+    { num: 7, img: 'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=200', name: ' mountains' },
+    { num: 8, img: 'https://images.unsplash.com/photo-1434394354979-a235cd36269d?w=200', name: '河流' },
+    { num: 9, img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=200', name: '峡谷' }
+  ]
+  
+  // 随机打乱顺序
+  const shuffled = [...imageThemes].sort(() => Math.random() - 0.5)
+  showImages.value = shuffled.map((item, idx) => ({ num: item.num, img: item.img, name: item.name, pos: idx }))
+  inputImages.value = [...showImages.value].map(n => ({ num: n.num, img: n.img, name: n.name, clicked: false }))
   
   setTimeout(() => {
     phase.value = 'input'
-  }, 3000)
+  }, 5000)
 }
 
 function clickImage(idx) {
@@ -1274,9 +1397,22 @@ function checkSentence() {
 // 看图说话 V3
 function initDescribeImage() {
   const imgs = [
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400',
-    'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=400'
+    // 自然风景
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600',
+    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600',
+    'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=600',
+    // 城市建筑
+    'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=600',
+    'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=600',
+    // 动物
+    'https://images.unsplash.com/photo-1474511320723-9a56873571b7?w=600',
+    'https://images.unsplash.com/photo-1504006833117-8886a355efbf?w=600',
+    // 食物
+    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600',
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600',
+    // 花草
+    'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600',
+    'https://images.unsplash.com/photo-1457530378978-8bac673b8062?w=600'
   ]
   describeImg.value = imgs[Math.floor(Math.random() * imgs.length)]
   imageDesc.value = ''
@@ -1427,10 +1563,11 @@ onUnmounted(() => {
 
 <style scoped>
 .game {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
   min-height: 100vh;
   background: #f5f7fa;
+  padding: 1.5rem;
 }
 
 .instruction-modal {
@@ -1743,31 +1880,54 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  max-width: 300px;
+  max-width: 450px;
   margin: 0 auto;
 }
 
 .seq-image {
   aspect-ratio: 1;
   background: #1e3a5f;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.seq-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.seq-num-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0,0,0,0.7);
   color: white;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  border-radius: 0.75rem;
-  cursor: pointer;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
 .seq-image.selected {
-  background: #4CAF50;
+  outline: 4px solid #4CAF50;
+  outline-offset: 2px;
 }
 
 .sequence-display {
   text-align: center;
-  margin-top: 1rem;
-  font-size: 1.25rem;
-  color: #666;
+  margin-top: 1.5rem;
+  font-size: 1.5rem;
+  color: #333;
+  background: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
 }
 
 /* 舒尔特方格 */
@@ -2647,6 +2807,130 @@ onUnmounted(() => {
   border-radius: 50%;
   margin: 0 auto 1rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* 提示按钮 */
+.hint-btn {
+  position: fixed;
+  top: 80px;
+  right: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #856404;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.hint-btn:hover {
+  background: #ffe69c;
+}
+
+/* 提示弹窗 */
+.hint-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.hint-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 500px;
+  text-align: center;
+  margin: 1rem;
+}
+
+.hint-content h4 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #1e3a5f;
+}
+
+.hint-content p {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.hint-close {
+  padding: 0.75rem 2rem;
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* 教程引导 */
+.tutorial-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.tutorial-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  max-width: 600px;
+  text-align: center;
+  margin: 1rem;
+}
+
+.tutorial-step {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.tutorial-text {
+  font-size: 1.5rem;
+  line-height: 2;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.tutorial-btn {
+  padding: 1rem 2rem;
+  border: 2px solid #1e3a5f;
+  border-radius: 0.75rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+  background: white;
+  color: #1e3a5f;
+}
+
+.tutorial-btn.primary {
+  background: #1e3a5f;
+  color: white;
 }
 
 /* 通用 */
