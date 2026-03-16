@@ -131,6 +131,82 @@
           </div>
         </div>
 
+        <!-- 人脸姓名 M4 -->
+        <div v-else-if="id === 'M4'" class="face-name-game">
+          <div v-if="phase === 'show'" class="show-phase">
+            <div class="face-grid">
+              <div v-for="(person, idx) in faceNamePairs" :key="idx" class="face-card">
+                <img :src="person.face" :alt="person.name" class="face-img" />
+                <span class="face-name">{{ person.name }}</span>
+              </div>
+            </div>
+            <p class="phase-tip">记住每个人脸对应的姓名</p>
+          </div>
+          <div v-else-if="phase === 'input'" class="input-phase">
+            <p class="phase-tip">选择正确的姓名</p>
+            <div class="face-quiz">
+              <img :src="currentQuiz.face" class="quiz-face" />
+              <div class="name-options">
+                <button v-for="opt in nameOptions" :key="opt" class="name-btn" :class="{ correct: opt === currentQuiz.correct && answered, wrong: answered && opt === userChoice && opt !== currentQuiz.correct }" :disabled="answered" @click="selectName(opt)">{{ opt }}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 地点记忆 M6 -->
+        <div v-else-if="id === 'M6'" class="location-memory">
+          <div v-if="phase === 'show'" class="show-phase">
+            <div class="location-grid">
+              <div v-for="(loc, idx) in locations" :key="idx" class="loc-item" :style="{ left: loc.x + '%', top: loc.y + '%' }">
+                <span class="loc-num">{{ loc.num }}</span>
+              </div>
+            </div>
+            <p class="phase-tip">记住数字位置顺序</p>
+          </div>
+          <div v-else-if="phase === 'input'" class="input-phase">
+            <p class="phase-tip">按顺序点击位置</p>
+            <div class="location-grid empty">
+              <div v-for="(loc, idx) in locations" :key="idx" class="loc-item" :class="{ clicked: loc.clicked }" :style="{ left: loc.x + '%', top: loc.y + '%' }" @click="clickLocation(idx)">
+                <span class="loc-num">{{ loc.clicked ? loc.num : '?' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 事件排序 M7 -->
+        <div v-else-if="id === 'M7'" class="event-sort">
+          <div v-if="phase === 'show'" class="show-phase">
+            <div class="event-timeline">
+              <div v-for="(evt, idx) in events" :key="idx" class="event-item">
+                <span class="event-num">{{ idx + 1 }}</span>
+                <span class="event-text">{{ evt }}</span>
+              </div>
+            </div>
+            <p class="phase-tip">记住事件顺序</p>
+          </div>
+          <div v-else-if="phase === 'input'" class="input-phase">
+            <p class="phase-tip">将事件按正确顺序拖拽排列</p>
+            <div class="event-list">
+              <div v-for="(evt, idx) in shuffledEvents" :key="idx" class="event-drag" @click="moveEvent(idx)">
+                <span class="event-num">{{ idx + 1 }}</span>
+                <span class="event-text">{{ evt }}</span>
+              </div>
+            </div>
+            <button class="submit-btn" @click="checkEventOrder">确认顺序</button>
+          </div>
+        </div>
+
+        <!-- 视觉搜索 A3 -->
+        <div v-else-if="id === 'A3'" class="visual-search">
+          <p class="search-target">找到：<span class="target-char">{{ targetChar }}</span></p>
+          <div class="search-grid">
+            <div v-for="(cell, idx) in searchCells" :key="idx" class="search-cell" :class="{ found: cell.found }" @click="clickSearchCell(idx)">
+              <span :class="{ target: cell.isTarget }">{{ cell.char }}</span>
+            </div>
+          </div>
+          <p class="phase-tip">已找到：{{ foundCount }} / {{ totalTargets }}</p>
+        </div>
+
         <!-- 默认：显示开发中 -->
         <div v-else class="coming-soon">
           <div class="coming-icon">🚧</div>
@@ -226,6 +302,26 @@ const wordInputs = ref([])
 // 颜色形状
 const colorShapePairs = ref([])
 
+// 人脸姓名 M4
+const faceNamePairs = ref([])
+const currentQuiz = ref({})
+const nameOptions = ref([])
+const userChoice = ref('')
+const answered = ref(false)
+
+// 地点记忆 M6
+const locations = ref([])
+
+// 事件排序 M7
+const events = ref([])
+const shuffledEvents = ref([])
+
+// 视觉搜索 A3
+const targetChar = ref('')
+const searchCells = ref([])
+const foundCount = ref(0)
+const totalTargets = ref(5)
+
 const totalPairs = computed(() => cards.value.length / 2)
 const gridClass = computed(() => `grid-${Math.ceil(Math.sqrt(cards.value.length))}`)
 
@@ -308,6 +404,10 @@ function startGame() {
   else if (id === 'A2') initFindDifference()
   else if (id === 'M5') initWordMemory()
   else if (id === 'M8') initColorShape()
+  else if (id === 'M4') initFaceName()
+  else if (id === 'M6') initLocationMemory()
+  else if (id === 'M7') initEventSort()
+  else if (id === 'A3') initVisualSearch()
 }
 
 function finishGame() {
@@ -525,6 +625,161 @@ function initColorShape() {
     colorShapePairs.value.push({ color: colors[i], shape: shapes[i] })
   }
   setTimeout(finishGame, 5000)
+}
+
+// 人脸姓名 M4
+function initFaceName() {
+  phase.value = 'show'
+  answered.value = false
+  userChoice.value = ''
+  
+  // 真实人物照片（使用picsumfaces）
+  const people = [
+    { name: '张伟', face: 'https://i.pravatar.cc/150?img=1' },
+    { name: '李娜', face: 'https://i.pravatar.cc/150?img=5' },
+    { name: '王强', face: 'https://i.pravatar.cc/150?img=8' },
+    { name: '刘洋', face: 'https://i.pravatar.cc/150?img=12' },
+    { name: '陈静', face: 'https://i.pravatar.cc/150?img=9' },
+    { name: '杨明', face: 'https://i.pravatar.cc/150?img=11' }
+  ]
+  faceNamePairs.value = people.slice(0, 4)
+  
+  setTimeout(() => {
+    phase.value = 'input'
+    startQuiz()
+  }, 4000)
+}
+
+function startQuiz() {
+  const correct = faceNamePairs.value[Math.floor(Math.random() * faceNamePairs.value.length)]
+  currentQuiz.value = { face: correct.face, correct: correct.name }
+  
+  const names = faceNamePairs.value.map(p => p.name).sort(() => Math.random() - 0.5)
+  nameOptions.value = names
+}
+
+function selectName(name) {
+  if (answered.value) return
+  userChoice.value = name
+  answered.value = true
+  
+  setTimeout(() => {
+    if (name === currentQuiz.value.correct) {
+      finishGame()
+    } else {
+      startQuiz()
+      answered.value = false
+      userChoice.value = ''
+    }
+  }, 1000)
+}
+
+// 地点记忆 M6
+function initLocationMemory() {
+  phase.value = 'show'
+  const locs = []
+  for (let i = 0; i < 9; i++) {
+    locs.push({ num: i + 1, x: 10 + (i % 3) * 35, y: 10 + Math.floor(i / 3) * 35, clicked: false })
+  }
+  // 随机位置
+  for (let i = locs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [locs[i], locs[j]] = [locs[j], locs[i]]
+  }
+  locations.value = locs.map((l, i) => ({ ...l, num: i + 1 }))
+  
+  setTimeout(() => {
+    phase.value = 'input'
+    locations.value.forEach(l => l.clicked = false)
+  }, 3000)
+}
+
+function clickLocation(idx) {
+  if (locations.value[idx].clicked) return
+  locations.value[idx].clicked = true
+  
+  const clicked = locations.value.filter(l => l.clicked)
+  if (clicked.length === 9) {
+    // 检查顺序
+    const sorted = [...locations.value].sort((a, b) => a.num - b.num)
+    const correct = locations.value.every((l, i) => l.num === i + 1)
+    if (correct) finishGame()
+    else {
+      alert('顺序错误，再试一次')
+      initLocationMemory()
+    }
+  }
+}
+
+// 事件排序 M7
+function initEventSort() {
+  phase.value = 'show'
+  const evtList = [
+    '早上起床',
+    '吃早餐',
+    '上班工作',
+    '午餐时间',
+    '下班回家',
+    '晚餐时间',
+    '看电视',
+    '上床睡觉'
+  ]
+  events.value = evtList.slice(0, 5)
+  shuffledEvents.value = [...events.value].sort(() => Math.random() - 0.5)
+  
+  setTimeout(() => {
+    phase.value = 'input'
+  }, 4000)
+}
+
+function moveEvent(idx) {
+  const item = shuffledEvents.value.splice(idx, 1)[0]
+  shuffledEvents.value.push(item)
+}
+
+function checkEventOrder() {
+  const correct = shuffledEvents.value.every((e, i) => e === events.value[i])
+  if (correct) finishGame()
+  else {
+    alert('顺序错误，再试一次')
+    initEventSort()
+  }
+}
+
+// 视觉搜索 A3
+function initVisualSearch() {
+  foundCount.value = 0
+  const chars = '天地人和日月星辰山水火木金土'
+  targetChar.value = chars[Math.floor(Math.random() * chars.length)]
+  
+  const cells = []
+  const targetCount = 3 + Math.floor(Math.random() * 3)
+  totalTargets.value = targetCount
+  
+  // 添加目标字符
+  for (let i = 0; i < targetCount; i++) {
+    cells.push({ char: targetChar.value, isTarget: true, found: false })
+  }
+  // 添加干扰字符
+  for (let i = 0; i < 20; i++) {
+    let char = chars[Math.floor(Math.random() * chars.length)]
+    while (char === targetChar.value) char = chars[Math.floor(Math.random() * chars.length)]
+    cells.push({ char, isTarget: false, found: false })
+  }
+  // 洗牌
+  cells.sort(() => Math.random() - 0.5)
+  searchCells.value = cells
+}
+
+function clickSearchCell(idx) {
+  const cell = searchCells.value[idx]
+  if (cell.found) return
+  
+  if (cell.isTarget) {
+    cell.found = true
+    foundCount.value++
+    if (foundCount.value >= totalTargets.value) finishGame()
+  }
 }
 
 onUnmounted(() => {
@@ -989,6 +1244,210 @@ onUnmounted(() => {
 
 .cs-shape {
   font-size: 2rem;
+}
+
+/* 人脸姓名 */
+.face-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+.face-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.face-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+}
+
+.face-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e3a5f;
+}
+
+.face-quiz {
+  text-align: center;
+}
+
+.quiz-face {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 1.5rem;
+}
+
+.name-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 250px;
+  margin: 0 auto;
+}
+
+.name-btn {
+  padding: 1rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 0.75rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.name-btn.correct {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.name-btn.wrong {
+  background: #f44336;
+  color: white;
+  border-color: #f44336;
+}
+
+/* 地点记忆 */
+.location-grid {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1rem;
+}
+
+.loc-item {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #1e3a5f;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.loc-item.clicked {
+  background: #4CAF50;
+}
+
+.location-grid.empty .loc-item {
+  background: #e0e0e0;
+  color: #999;
+}
+
+.location-grid.empty .loc-item.clicked {
+  background: #1e3a5f;
+}
+
+/* 事件排序 */
+.event-timeline {
+  background: white;
+  border-radius: 1rem;
+  padding: 1rem;
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.event-num {
+  width: 30px;
+  height: 30px;
+  background: #1e3a5f;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.event-text {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.event-list {
+  background: white;
+  border-radius: 1rem;
+  padding: 1rem;
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+.event-drag {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+/* 视觉搜索 */
+.search-target {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.target-char {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1e3a5f;
+  background: #fff3cd;
+  padding: 0.25rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+.search-cell {
+  aspect-ratio: 1;
+  background: white;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  cursor: pointer;
+}
+
+.search-cell.found {
+  background: #4CAF50;
+  color: white;
 }
 
 /* 通用 */
