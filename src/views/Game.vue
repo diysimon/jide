@@ -1,5 +1,72 @@
 <template>
   <div class="game">
+    <!-- 设置栏 -->
+    <div class="settings-bar">
+      <button class="setting-btn" @click="trainingStore.toggleLanguage">
+        {{ trainingStore.language === 'zh' ? '中文' : 'EN' }}
+      </button>
+      <button class="setting-btn" @click="trainingStore.toggleSound">
+        {{ trainingStore.soundEnabled ? '🔊' : '🔇' }}
+      </button>
+      <select class="difficulty-select" :value="trainingStore.difficulty" @change="trainingStore.setDifficulty($event.target.value)">
+        <option value="easy">{{ trainingStore.language === 'zh' ? '简单' : 'Easy' }}</option>
+        <option value="normal">{{ trainingStore.language === 'zh' ? '中等' : 'Normal' }}</option>
+        <option value="hard">{{ trainingStore.language === 'zh' ? '困难' : 'Hard' }}</option>
+      </select>
+      <button class="setting-btn stats-btn" @click="showStats = true">
+        📊 {{ trainingStore.language === 'zh' ? '统计' : 'Stats' }}
+      </button>
+    </div>
+
+    <!-- 统计弹窗 -->
+    <div v-if="showStats" class="stats-modal" @click.self="showStats = false">
+      <div class="stats-content">
+        <h2>📊 {{ trainingStore.language === 'zh' ? '训练统计' : 'Training Statistics' }}</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-num">{{ trainingStore.stats.total }}</span>
+            <span class="stat-label">{{ trainingStore.language === 'zh' ? '总训练次数' : 'Total Sessions' }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">{{ trainingStore.stats.avgScore }}</span>
+            <span class="stat-label">{{ trainingStore.language === 'zh' ? '平均分' : 'Avg Score' }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">{{ formatTime(trainingStore.stats.totalTime) }}</span>
+            <span class="stat-label">{{ trainingStore.language === 'zh' ? '总训练时间' : 'Total Time' }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">{{ trainingStore.stats.completedGames }}/{{ trainingStore.stats.totalGames }}</span>
+            <span class="stat-label">{{ trainingStore.language === 'zh' ? '已完成游戏' : 'Games Played' }}</span>
+          </div>
+        </div>
+        
+        <h3>🏆 {{ trainingStore.language === 'zh' ? '成就' : 'Achievements' }}</h3>
+        <div class="achievements-list">
+          <div v-if="trainingStore.achievements.length === 0" class="no-achievements">
+            {{ trainingStore.language === 'zh' ? '暂无成就，继续加油！' : 'No achievements yet, keep going!' }}
+          </div>
+          <div v-for="ach in trainingStore.achievements" :key="ach.id" class="achievement-item">
+            <span class="achievement-icon">🏅</span>
+            <div class="achievement-info">
+              <span class="achievement-name">{{ ach.name }}</span>
+              <span class="achievement-desc">{{ ach.desc }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <h3>⭐ {{ trainingStore.language === 'zh' ? '历史最高分' : 'High Scores' }}</h3>
+        <div class="highscores-list">
+          <div v-for="(score, gameId) in trainingStore.highScores" :key="gameId" class="highscore-item">
+            <span class="hs-game">{{ getGameName(gameId) }}</span>
+            <span class="hs-score">{{ score.score }}分</span>
+          </div>
+        </div>
+        
+        <button class="close-btn" @click="showStats = false">{{ trainingStore.language === 'zh' ? '关闭' : 'Close' }}</button>
+      </div>
+    </div>
+
     <!-- 玩法说明弹窗 -->
     <div v-if="showInstructions" class="instruction-modal">
       <div class="instruction-content">
@@ -420,18 +487,22 @@
         <h3>恭喜完成！</h3>
         <div class="end-stats">
           <div class="end-stat">
-            <span class="label">用时</span>
+            <span class="label">{{ trainingStore.language === 'zh' ? '用时' : 'Time' }}</span>
             <span class="value">{{ formatTime(time) }}</span>
           </div>
           <div class="end-stat">
-            <span class="label">得分</span>
+            <span class="label">{{ trainingStore.language === 'zh' ? '得分' : 'Score' }}</span>
             <span class="value">{{ score }}</span>
           </div>
           <div v-if="resultMessage" class="result-message">{{ resultMessage }}</div>
+          <div v-if="isNewHighScore" class="new-highscore">
+            🏆 {{ trainingStore.language === 'zh' ? '新纪录！' : 'New High Score!' }}
+          </div>
         </div>
         <div class="end-actions">
-          <button class="action-btn primary" @click="playAgain">再玩一次</button>
-          <button class="action-btn secondary" @click="goBack">返回</button>
+          <button class="action-btn share" @click="shareScore">📤 {{ trainingStore.language === 'zh' ? '分享成绩' : 'Share' }}</button>
+          <button class="action-btn primary" @click="playAgain">🔄 {{ trainingStore.language === 'zh' ? '再玩一次' : 'Play Again' }}</button>
+          <button class="action-btn secondary" @click="goBack">🏠 {{ trainingStore.language === 'zh' ? '返回' : 'Home' }}</button>
         </div>
       </div>
     </div>
@@ -471,6 +542,10 @@ const tutorialTips = ref([])
 // 游戏提示
 const gameHint = ref('')
 const hintVisible = ref(false)
+
+// 统计相关
+const showStats = ref(false)
+const isNewHighScore = ref(false)
 
 const score = ref(0)
 const time = ref(0)
@@ -655,9 +730,37 @@ const gameSteps = {
 const defaultSteps = ['仔细阅读游戏规则', '理解游戏目标', '按照步骤操作', '完成游戏后查看成绩']
 
 function formatTime(sec) {
+  if (sec === undefined || sec === null) return '0:00'
   const m = Math.floor(sec / 60)
   const s = sec % 60
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+// 获取游戏名称
+function getGameName(gameId) {
+  const modules = trainingStore.trainingModules
+  for (const module of Object.values(modules)) {
+    const game = module.games.find(g => g.id === gameId)
+    if (game) {
+      return trainingStore.language === 'zh' ? game.name : game.nameEn
+    }
+  }
+  return gameId
+}
+
+// 分享成绩
+function shareScore() {
+  const gameName = getGameName(id)
+  const text = trainingStore.language === 'zh' 
+    ? `我在Jide大脑训练系统中完成了「${gameName}」，得分${score.value}，用时${formatTime(time.value)}！`
+    : `I completed "${gameName}" in Jide Brain Training, score ${score.value}, time ${formatTime(time.value)}!`
+  
+  if (navigator.share) {
+    navigator.share({ text })
+  } else {
+    navigator.clipboard.writeText(text)
+    alert(trainingStore.language === 'zh' ? '已复制到剪贴板！' : 'Copied to clipboard!')
+  }
 }
 
 function goBack() {
@@ -774,9 +877,20 @@ function finishGame() {
   gameState.value = 'finished'
   score.value = Math.max(1000 - time.value * 5 - (matched.value > 0 ? matched.value * 20 : 0), 100)
   
-  if (score.value >= 800) resultMessage.value = '太棒了！表现优秀！'
-  else if (score.value >= 600) resultMessage.value = '做得好！继续加油！'
-  else resultMessage.value = '再接再厉！'
+  // 检查是否新高分
+  const previousHigh = trainingStore.highScores[id]
+  isNewHighScore.value = !previousHigh || score.value > previousHigh.score
+  
+  if (isNewHighScore.value) {
+    trainingStore.playSound('success')
+    resultMessage.value = trainingStore.language === 'zh' ? '🎉 新纪录！太棒了！' : '🎉 New High Score! Amazing!'
+  } else if (score.value >= 800) {
+    resultMessage.value = trainingStore.language === 'zh' ? '太棒了！表现优秀！' : 'Excellent! Great performance!'
+  } else if (score.value >= 600) {
+    resultMessage.value = trainingStore.language === 'zh' ? '做得好！继续加油！' : 'Good job! Keep going!'
+  } else {
+    resultMessage.value = trainingStore.language === 'zh' ? '再接再厉！' : 'Keep trying!'
+  }
   
   trainingStore.recordResult(id, score.value, time.value)
 }
@@ -2930,6 +3044,199 @@ onUnmounted(() => {
 
 .tutorial-btn.primary {
   background: #1e3a5f;
+  color: white;
+}
+
+/* 设置栏 */
+.settings-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.setting-btn {
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 2px solid #1e3a5f;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  cursor: pointer;
+}
+
+.difficulty-select {
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 2px solid #1e3a5f;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  color: #1e3a5f;
+  cursor: pointer;
+}
+
+.stats-btn {
+  background: #1e3a5f;
+  color: white;
+}
+
+/* 统计弹窗 */
+.stats-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.stats-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 550px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.stats-content h2 {
+  text-align: center;
+  font-size: 1.75rem;
+  color: #1e3a5f;
+  margin-bottom: 1.5rem;
+}
+
+.stats-content h3 {
+  font-size: 1.3rem;
+  color: #1e3a5f;
+  margin: 1.5rem 0 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.stat-item {
+  background: #f5f7fa;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.stat-num {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #1e3a5f;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.achievements-list, .highscores-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.no-achievements {
+  text-align: center;
+  color: #999;
+  padding: 1rem;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f5f7fa;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.achievement-icon {
+  font-size: 1.5rem;
+}
+
+.achievement-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.achievement-name {
+  font-weight: bold;
+  color: #1e3a5f;
+}
+
+.achievement-desc {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.highscore-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: #f5f7fa;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.hs-game {
+  color: #333;
+}
+
+.hs-score {
+  font-weight: bold;
+  color: #1e3a5f;
+}
+
+.close-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background: #1e3a5f;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 1.5rem;
+}
+
+/* 新纪录提示 */
+.new-highscore {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #333;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-align: center;
+  animation: pulse-gold 1s infinite;
+}
+
+@keyframes pulse-gold {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* 分享按钮 */
+.action-btn.share {
+  background: #4CAF50;
   color: white;
 }
 
