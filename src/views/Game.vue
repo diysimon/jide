@@ -134,8 +134,11 @@
           </div>
         </div>
         
+        <!-- 动态游戏组件 -->
+        <component :is="currentGameComponent" :gameId="id" @finish="handleFinish" v-if="currentGameComponent" />
+        
         <!-- 翻卡配对 M1 -->
-        <div v-if="id === 'M1'" class="memory-cards">
+        <div v-if="!currentGameComponent && id === 'M1'" class="memory-cards">
           <div class="cards-grid" :class="gridClass">
             <div v-for="(card, index) in cards" :key="index" class="card" :class="{ flipped: card.flipped, matched: card.matched }" @click="flipCard(index)">
               <div class="card-inner">
@@ -513,6 +516,58 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTrainingStore, trainingModules } from '../stores/training'
+
+// 游戏组件导入
+import CardMatch from '../games/CardMatch.vue'
+import NumberMemory from '../games/NumberMemory.vue'
+import ImageSequence from '../games/ImageSequence.vue'
+import FaceName from '../games/FaceName.vue'
+import WordMemory from '../games/WordMemory.vue'
+import LocationMemory from '../games/LocationMemory.vue'
+import EventSort from '../games/EventSort.vue'
+import ColorShape from '../games/ColorShape.vue'
+import SchulteGrid from '../games/SchulteGrid.vue'
+import FindDifferences from '../games/FindDifferences.vue'
+import VisualSearch from '../games/VisualSearch.vue'
+import TrackTarget from '../games/TrackTarget.vue'
+import PatternReasoning from '../games/PatternReasoning.vue'
+import Sudoku from '../games/Sudoku.vue'
+import SequencePattern from '../games/SequencePattern.vue'
+import CategoryGame from '../games/CategoryGame.vue'
+import WordChain from '../games/WordChain.vue'
+import SentenceBuild from '../games/SentenceBuild.vue'
+
+// 游戏组件映射
+const gameComponents = {
+  M1: CardMatch,
+  M2: NumberMemory,
+  M3: ImageSequence,
+  M4: FaceName,
+  M5: WordMemory,
+  M6: LocationMemory,
+  M7: EventSort,
+  M8: ColorShape,
+  A1: SchulteGrid,
+  A2: FindDifferences,
+  A3: VisualSearch,
+  A4: TrackTarget,
+  L1: PatternReasoning,
+  L2: Sudoku,
+  L3: SequencePattern,
+  L4: CategoryGame,
+  V1: WordChain,
+  V2: SentenceBuild
+}
+
+// 当前游戏组件
+const currentGameComponent = computed(() => gameComponents[id] || null)
+
+// 处理游戏完成
+function handleFinish({ score, duration }) {
+  score.value = score
+  time.value = duration
+  finishGame()
+}
 
 const router = useRouter()
 const route = useRoute()
